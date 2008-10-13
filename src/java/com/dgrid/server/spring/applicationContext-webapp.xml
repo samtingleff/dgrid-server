@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-2.0.xsd">
+    
+    <!-- Enable @Transactional support -->
+    <tx:annotation-driven/>
+
+    <!-- Enable @AspectJ support -->
+    <aop:aspectj-autoproxy/>
+
+    <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!--<tx:method name="get*" read-only="true"/>-->
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:advisor id="managerTx" advice-ref="txAdvice" pointcut="execution(* *..service.impl.*.*(..))"/>
+    </aop:config>
+
+    <!-- config -->
+    <bean
+            id="propertyConfigurator"
+            class="com.dgrid.helpers.impl.PropertyConfiguratorImpl">
+        <property name="location">
+            <value>classpath:/dgrid.properties</value>
+        </property>
+    </bean>
+
+    <!-- JMS ConnectionFactory to use -->
+    <bean id="jmsFactory"
+            class="org.apache.activemq.ActiveMQConnectionFactory">
+        <property name="brokerURL" value="${activemq.brokerURL}"/>
+    </bean>
+
+    <!-- Spring JMS Template -->
+    <bean id="jmsTemplate"
+            class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory">
+            <bean class="org.springframework.jms.connection.SingleConnectionFactory">
+                <property name="targetConnectionFactory" ref="jmsFactory" />
+            </bean>
+	        </property>
+    </bean>
+
+    <!-- generic dao operations -->
+    <bean
+            id="genericDAOService"
+            class="com.dgrid.server.service.impl.GenericDAOServiceImpl">
+        <property name="genericDAO" ref="genericDAO"/>
+    </bean>
+
+    <!-- api key service -->
+    <bean
+            id="apiKeyService"
+            class="com.dgrid.server.service.impl.ApiKeyServiceImpl">
+        <property name="objectQueryDAO" ref="objectQueryDAO"/>
+    </bean>
+
+    <!-- settings service -->
+    <bean
+            id="settingsService"
+            class="com.dgrid.server.service.impl.SettingsServiceImpl">
+        <property name="genericDAO" ref="genericDAO"/>
+        <property name="objectQueryDAO" ref="objectQueryDAO"/>
+    </bean>
+
+    <!-- endpoint -->
+    <bean
+            id="endpoint"
+            class="com.dgrid.server.service.impl.DGridEndpointImpl"
+            init-method="init">
+        <property name="objectQueryDAO" ref="objectQueryDAO"/>
+        <property name="apiKeyService" ref="apiKeyService"/>
+        <property name="transport" ref="hibernateTransport"/>
+    </bean>
+
+    <!-- synchronous job service -->
+    <bean
+            id="syncJobService"
+            class="com.dgrid.service.impl.DGridSyncJobServiceImpl">
+        <property name="apiKey" value="${transport.apiKey}"/>
+    </bean>
+
+    <!-- json joblet serializer -->
+    <bean
+            id="jsonJobletSerializer"
+            class="com.dgrid.server.service.impl.JsonJobletSerializer"
+            lazy-init="true">
+    </bean>
+
+    <!-- jms queue listener -->
+    <bean id="jmsQueueBridge"
+            class="com.dgrid.server.service.impl.JmsQueueBridge"
+            init-method="init"
+            destroy-method="destroy">
+        <property name="jmsTemplate" ref="jmsTemplate"/>
+        <property name="handler" ref="endpoint"/>
+        <property name="settingsService" ref="settingsService"/>
+        <property name="jobletSerializer" ref="jsonJobletSerializer"/>
+        <property name="apiKey" value="${transport.apiKey}"/>
+    </bean>
+
+    <!-- thrift listener -->
+    <bean
+            id="thriftListener"
+            class="com.dgrid.server.service.impl.DGridThriftListenerImpl"
+            scope="singleton"
+            init-method="init"
+            destroy-method="destroy"
+            lazy-init="false">
+        <property name="handler" ref="endpoint"/>
+        <property name="settingsService" ref="settingsService"/>
+    </bean>
+
+</beans>

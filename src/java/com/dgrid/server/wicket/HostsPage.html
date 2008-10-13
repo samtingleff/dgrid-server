@@ -1,0 +1,37 @@
+<html>
+ <head>
+ </head>
+ <body>
+  <span wicket:id="navomaticBorder">
+   page 1
+  </span>
+  <span wicket:id="navigator">[dataview navigator]</span>
+  <table>
+   <thead>
+    <tr>
+     <th>status</th>
+     <th>hostname</th>
+     <th>active tasks</th>
+     <th>load average</th>
+     <th>free memory</th>
+     <th>actions</th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr wicket:id="hosts">
+     <td><img wicket:id="img-status"/></td>
+     <td><span wicket:id="hostname">hostname</span></td>
+     <td><span wicket:id="activeTasks">activeTasks</span></td>
+     <td><span wicket:id="loadAverage">loadAverage</span></td>
+     <td><span wicket:id="freeMemory">freeMemory</span></td>
+     <td>
+      <img wicket:id="img-restart"/>
+      <img wicket:id="img-stop"/>
+      <a href="#" wicket:id="hostSettingsLink">settings</a>
+      <a href="#" wicket:id="hostDeleteLink">delete</a>
+     </td>
+    </tr>
+   </tbody>
+  </table>
+ </body>
+</html>
